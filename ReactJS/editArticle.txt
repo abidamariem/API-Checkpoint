@@ -1,0 +1,420 @@
+export const getArticleByID = async (req, res) => { 
+    try {
+        const art = await Article.findById(req.params.id).populate("categorieID").populate("scategorieID").exec();
+        
+        res.status(200).json(art);
+    } catch (error) {
+        res.status(404).json({ message: error.message });
+    }
+}
+
+import React, { useState,useEffect } from "react";
+import Axios from "../../Axios/Api";
+import { makeStyles } from '@material-ui/core/styles';
+import MenuItem from '@material-ui/core/MenuItem';
+import FormControl from '@material-ui/core/FormControl';
+import TextField from '@material-ui/core/TextField';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+// Import React FilePond
+import { FilePond, File, registerPlugin } from 'react-filepond'
+// Import FilePond styles
+import 'filepond/dist/filepond.min.css'
+// Import the Image EXIF Orientation and Image Preview plugins
+// Note: These need to be installed separately
+// `npm i filepond-plugin-image-preview filepond-plugin-image-exif-orientation --save`
+import FilePondPluginImageExifOrientation from 'filepond-plugin-image-exif-orientation'
+import FilePondPluginImagePreview from 'filepond-plugin-image-preview'
+import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css'
+
+import { useNavigate, useParams } from "react-router-dom";
+
+import SaveIcon from '@mui/icons-material/Save';
+import CancelIcon from '@mui/icons-material/Cancel';
+import { Link } from "react-router-dom";
+import {Button} from '@mui/material';
+
+// Register the plugins
+registerPlugin(FilePondPluginImageExifOrientation, FilePondPluginImagePreview)
+
+const useStyles = makeStyles((theme) => ({
+  
+  formControl: {
+    margin: theme.spacing(1),
+    
+    minWidth: 120,
+    
+  },
+  TextField1:{
+  marginLeft: 8,
+  marginTop:20,
+  width:400
+  },
+TextField2:{
+ marginLeft: 20,marginTop:20,width:400}
+
+}));
+
+const ModifArticle =()=> {
+
+  let navigate=useNavigate();
+
+  const {id} = useParams();
+    const classes = useStyles();
+    
+    const [reference, setReference] = useState("");
+    const [designation, setDesignation] = useState("");
+    const [categories, setCategories] = useState("");
+    const [categorieID, setcategorieID] = useState("");
+    const [scategories, setScategories] = useState("");
+    const [scategorieID, setscategorieID] = useState("");
+    const [prixAchat, setPrixAchat] = useState("");
+    const [prixVente, setPrixVente] = useState("");
+    const [prixSolde, setPrixSolde] = useState("");
+    const [marque, setMarque] = useState("");
+    
+    const [qtestock, setQtestock] = useState("");
+    const [caracteristiques, setCaracteristiques] = useState("");
+    const [files, setFiles] = useState([])
+    const [filesm, setFilesm] = useState([])
+    
+
+    useEffect(() => {
+       
+      GetListCategories();
+
+      Axios.get('/articles/'+ id)
+        .then(res => {
+          setReference(res.data.reference);
+          setDesignation(res.data.designation);
+          setscategorieID(res.data.scategorieID)
+          setcategorieID(res.data.categorieID);
+          setPrixAchat(res.data.prixAchat);
+          setPrixVente(res.data.prixVente);
+          setPrixSolde(res.data.prixSolde);
+          setMarque(res.data.marque);
+          setQtestock(res.data.qtestock);
+          setCaracteristiques(res.data.caracteristiques);
+          
+          setFiles("/"+res.data.imageartpetitf); 
+
+          var ig=[];
+          res.data.imageartgrandf.forEach(element => { 
+       ig.push("/"+element);
+        
+        });
+         
+          setFilesm(ig); 
+          console.log(res.data)       
+             })
+        .catch((error) => {
+          console.log(error);
+           toast("Une erreur est parvenue", {
+               position: "top-right",
+               autoClose: 5000,
+               hideProgressBar: false,
+               closeOnClick: true,
+               pauseOnHover: true,
+               draggable: true,
+               progress: undefined,
+               });
+        })
+        },[]); 
+
+         
+    
+        const GetListCategories=async()=>{
+            
+          await Axios.get("/categories")
+              .then((res) => {
+                setCategories(res.data); 
+                                    });
+          }
+
+        const GetListSCategories=async(idcat)=>{
+          
+          await Axios.get('/scategories/cat/' + idcat)
+                 .then((res) => {
+                  setScategories(res.data);
+                         });
+             }  
+             
+         
+       const handleSubmit = async (event) => {
+        
+        event.preventDefault(); 
+      
+     var ig=[];
+
+        filesm.forEach(element => { 
+         ig.push("/images/"+element.file.name);
+        
+        });
+
+        const objetarticle  = {
+          _id : id,
+            reference: reference,
+            designation :designation,
+            prixAchat :prixAchat,
+            prixVente :prixVente,
+            prixSolde :prixSolde,
+            marque :marque,
+            qtestock :qtestock,
+            caracteristiques:caracteristiques,
+            categorieID:categorieID,
+            imageartpetitf :  files?"images/"+files[0].file.name:null,
+            imageartgrandf:ig,
+            scategorieID :scategorieID
+                         }; 
+
+        
+    
+        await Axios.put('/articles/' + id, objetarticle).then((res)=>{   
+        
+               toast("Article modifié", {
+                position: "top-right",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                });
+               
+           navigate("/Articles")   
+          }).catch(error => {  
+              toast("Erreur Article non modifié", {
+              position: "top-right",
+              autoClose: 5000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              });
+          });  
+      }
+    
+     return (
+      <>
+      <ToastContainer />
+
+         <form onSubmit={handleSubmit} className={classes.root} noValidate autoComplete="off" enctype="multipart/form-data">
+             <h2>Edit Article  </h2>
+               <div>
+        
+        <Button style={{padding:15,margin:20,width:150}}
+        color="secondary"
+        
+        loadingPosition="start"
+        startIcon={<SaveIcon  />}
+        variant="contained"
+        onClick={(event)=>handleSubmit(event)}
+   
+      
+      >
+        
+        Update
+      </Button>
+      
+      <Button style={{padding:15,margin:2,width:150}}
+        color="primary"
+        
+        
+        startIcon={<CancelIcon />}
+        variant="contained"
+        
+
+      
+      >
+        { <Link to={"/ArticlesTable"}  style={{textDecoration: "none",color:"white"}}>
+                Annuler
+            </Link> 
+            }
+        
+      </Button>
+      
+
+
+         
+          </div>
+           <FormControl className={classes.formControl}> 
+            <TextField className={classes.TextField1}
+                 variant="outlined"
+                 label="Désignation"
+                 
+
+                 value={designation}
+                 onChange={e => setDesignation(e.target.value)}
+                 required />
+             </FormControl>
+   
+             
+             <FormControl className={classes.formControl}> 
+              <TextField className={classes.TextField2}
+              variant="outlined"
+               label="Référence"
+               value={reference}
+               onChange={e => setReference(e.target.value)}
+               required />
+             </FormControl> 
+   
+               <FormControl className={classes.formControl}>  
+             <TextField className={classes.TextField1}
+              variant="outlined"
+                 label="Prix Achat"
+                 type="number"
+                  value={prixAchat}
+                 onChange={e => setPrixAchat(e.target.value)}
+                  /> 
+             </FormControl>  
+           
+             <FormControl className={classes.formControl}>  
+             <TextField className={classes.TextField2}
+              variant="outlined"
+                 label="Prix Vente"
+                 type="number"
+                 value={prixVente}
+                 onChange={e => setPrixVente(e.target.value)}
+                  /> 
+             </FormControl> 
+   
+              <FormControl className={classes.formControl}>  
+             <TextField className={classes.TextField1}
+              variant="outlined"
+                 label="Prix Solde"
+                 type="number"
+                 value={prixSolde}
+                 onChange={e => setPrixSolde(e.target.value)}
+                  /> 
+             </FormControl>   
+           
+           <FormControl className={classes.formControl}>  
+                      
+           <TextField className={classes.TextField2}
+            variant="outlined"
+                 label="Quantité Stock"
+                 type="number"
+                 value={qtestock}
+                 onChange={e => setQtestock(e.target.value)}
+                  /> 
+           </FormControl>  
+           <FormControl className={classes.formControl}>  
+           
+           <TextField className={classes.TextField1}
+        
+            style={{ marginLeft: 8}}
+            variant="outlined"
+            label="Marque"
+            value={marque}
+            
+
+            
+                 onChange={e => setMarque(e.target.value)}
+                  /> 
+         </FormControl>
+           <FormControl className={classes.formControl}>  
+        <div>
+           <TextField className={classes.TextField2}
+        
+           style={{ marginLeft: 8}}
+           margin="normal"
+            variant="outlined"
+          
+            multiline
+
+            rows={2}
+            
+          
+                 label="Caractéristiques"
+                 type="textarea"
+                 value={caracteristiques}
+                 onChange={e => setCaracteristiques(e.target.value)}
+                  /> 
+            
+            </div> 
+           </FormControl> 
+           <br/>
+            <FormControl style={{width:350}}>
+             <TextField 
+                   select
+                   label="Categories"
+                   variant="outlined"
+                   value={categorieID}
+                   onChange={e=>{setcategorieID(e.target.value); GetListSCategories(e.target.value)}  }
+                   helperText={categorieID.nomcategorie}
+                   style={{ marginLeft: 8,marginTop:20,width:820}}
+                    >
+               {
+               categories ?    
+               categories.map(f=>
+                    <MenuItem value={f._id}>{f.nomcategorie}
+                    
+                    </MenuItem>
+                    
+               )
+               :null
+               }
+             </TextField>
+           
+             </FormControl>
+             <br/>
+             <FormControl style={{width:350}}>
+            
+             <TextField 
+                   select
+                   label="Sous Categories"
+                   variant="outlined"
+                   value={scategorieID}
+                   onChange={e=>{setscategorieID(e.target.value)} }
+                   helperText={scategorieID.nomscategorie}
+                   style={{ marginLeft: 8,marginTop:20,width:820}}
+                    >
+               {
+               scategories ?    
+               scategories.map(f=>
+                    <MenuItem value={f._id}>{f.nomscategorie}
+                    
+                    </MenuItem>
+                    
+               )
+               :null
+               }
+             </TextField>
+            
+             </FormControl>
+          </form>
+             <br/>
+             <h4>Upload Images</h4>
+             <FormControl className={classes.formControl}>   
+             <div style={{width:300, height:50}}>
+           <FilePond
+           files={files}
+           allowMultiple={false}
+           onupdatefiles={setFiles}
+           labelIdle='<span class="filepond--label-action">Browse One</span>'
+         />
+           </div>
+          </FormControl>
+          <FormControl className={classes.formControl}> 
+           <div style={{width:300, height:40}}>
+          <FilePond
+           files={filesm}
+           
+           allowMultiple={true}
+           onupdatefiles={setFilesm}
+           labelIdle='<span class="filepond--label-action">Browse Many</span>'
+         />
+            </div>
+           </FormControl>
+           
+   
+           
+         </> 
+     
+    );
+ 
+}
+
+export default ModifArticle;
+

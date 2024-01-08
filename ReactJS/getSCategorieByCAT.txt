@@ -1,0 +1,8 @@
+export const getSCategorieByCAT = async (req, res) => { 
+    try { 
+        var result = await Scategorie.find({ categorieID: req.params.categorieID}).exec();
+                    res.send(result);
+                } catch (error) {
+                    res.status(500).send(error);
+                }
+}
